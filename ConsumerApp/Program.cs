@@ -9,7 +9,10 @@ new CredentialProfileStoreChain().TryGetAWSCredentials("default", out var awsCre
 await Host.CreateDefaultBuilder()
     .ConfigureLogging(n =>
     {
-        n.AddConsole();
+        n.AddConsole(c =>
+        {
+            c.TimestampFormat = "[HH:mm:ss] ";
+        });
         n.SetMinimumLevel(LogLevel.Trace);
     })
     .ConfigureServices((hostContext, services) =>
@@ -41,12 +44,24 @@ await Host.CreateDefaultBuilder()
 
 public class MessageConsumer : IConsumer<Message>
 {
+    private readonly ILogger<MessageConsumer> _logger;
+
+    public MessageConsumer(ILogger<MessageConsumer> logger)
+    {
+        _logger = logger;
+    }
+
     public async Task Consume(ConsumeContext<Message> context)
     {
-        Console.WriteLine(context.Message.Body);
+        _logger.LogInformation("Received message: " + context.Message.Body);
+        int delayMs = 15_000;
+        _logger.LogInformation("Waiting " + delayMs);
+
+        await Task.Delay(delayMs);
         await context.RespondAsync<MessageResponse>(new () 
         {
              Body = "Re " + context.Message.Body
         }); 
+        _logger.LogInformation("Response sent");
     }
 }

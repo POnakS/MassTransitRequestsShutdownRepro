@@ -3,19 +3,22 @@ using Amazon.Runtime.CredentialManagement;
 using MassTransit;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Contracts;
 using Microsoft.Extensions.Logging;
-
+using ProducerApp;
 
 new CredentialProfileStoreChain().TryGetAWSCredentials("default", out var awsCredentials);
-var producer =  Host.CreateDefaultBuilder()
+await  Host.CreateDefaultBuilder()
     .ConfigureLogging(n =>
     {
-        n.AddConsole();
+        n.AddConsole(c =>
+        {
+            c.TimestampFormat = "[HH:mm:ss] ";
+        });
         n.SetMinimumLevel(LogLevel.Trace);
     })
     .ConfigureServices((hostContext, services) =>
     {
+        services.AddHostedService<Worker>();
         services.AddTransient<MessageSender>();
         services.AddMassTransit(x =>
         {
@@ -38,34 +41,4 @@ var producer =  Host.CreateDefaultBuilder()
             });
         });
     })
-    .Build();
-
-producer.Start();
-
-var messageSender = producer.Services.GetRequiredService<MessageSender>();
-while (true)
-{
-    await messageSender.SendMessage(Console.ReadLine()!);
-}
-
-class MessageSender 
-{
-    private readonly IBus _bus;
-
-    public MessageSender(IBus bus)
-    {
-        _bus = bus;
-    }
-
-    public async Task SendMessage(string body)
-    {
-        var message = new Message 
-        {
-            Body = body
-        };
-        
-        var client = _bus.CreateRequestClient<Message>(TimeSpan.FromSeconds(60));
-        var responseMessage = await client.GetResponse<MessageResponse>(message);
-        Console.WriteLine("Received " + responseMessage.Message.Body);
-    }
-}
+    .RunConsoleAsync();
