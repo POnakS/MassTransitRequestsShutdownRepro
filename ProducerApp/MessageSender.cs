@@ -28,9 +28,9 @@ public class MessageSender
             var responseMessage = await client.GetResponse<MessageResponse>(message);
             _logger.LogInformation("Received " + responseMessage.Message.Body);
         }
-        catch
+        catch(Exception ex)
         {
-            _logger.LogInformation("Receive failed with exception");
+            _logger.LogInformation("Receive failed with exception: " + ex.Message);
         }
     }
 }

@@ -18,6 +18,10 @@ await  Host.CreateDefaultBuilder()
     })
     .ConfigureServices((hostContext, services) =>
     {
+        services.Configure<HostOptions>(o =>
+        {
+            o.ShutdownTimeout = TimeSpan.FromSeconds(60);
+        });
         services.AddHostedService<Worker>();
         services.AddTransient<MessageSender>();
         services.AddMassTransit(x =>
